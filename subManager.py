@@ -2,12 +2,28 @@ import requests
 import re
 from lxml import html
 import send_attachment as sa
-def test():
-  return get_page_content()
+import sqlite3
+import time
+
+if __name__=='__main__': main()
+
+def main():
+  dbfile = '/var/www/html/tables/database.db'
+  conn = sqlite3.connect(dbfile)
+  c = conn.cursor()
+  # for every row, look at the timenext
+  t = (time.time(),)
+  for row in c.execute('select * from SubID where timenext < ?;',t):
+    #(userid, name,email,pswd)
+    (subid,userid,website,regex,conditions,timenext,period) = row
+    sendmail = check_sub(sub_id=subid,url=website,attr_patterns=regex,conditions=conditions)
+    if sendmail: sa.send_attachment('tmp/'+str(sub_id)+'.html')
+    print('incrementing timenext')
+    c.execute('update SubID set timenext = timenext + period;')
+    c.commit()
 
 class NoMatchesWarning(Exception):
   pass
-
 
 def get_page_content(url=None,headers=None):
   if headers is None: 
@@ -167,9 +183,9 @@ def scrape(url=None,headers=None,attr_patterns=None):
   except IndexError:
     print('attributes are not characteristic of each item')
   return page_str
-def do_sub(): do_subscription()
+def do_sub(): check_sub()
 
-def do_subscription(sub_id=None,url=None,attr_patterns=None):
+def check_sub(sub_id=None,url=None,attr_patterns=None,conditions=None):
   page_str=scrape(url=url,attr_patterns=attr_patterns)
   if sub_id is None: sub_id = 0
   if(page_str is not None):
