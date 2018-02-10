@@ -42,13 +42,25 @@ def parse_page(page_str, attr_patterns):
   returns a list of objects on the webpage, each object is dictionary of format keywords,values
   """
   attr_indicies = [
-    (a,[m.start() for m in re.finditer(a,page_str)])
+    (a,[(m.start(),m.group(0)) for m in re.finditer(a,page_str)])
       for a in attr_patterns
   ]
   
   obj_list = order_by_obj(page_str,attr_indicies)
   return obj_list
 
+def scrape(url=None,headers=None,attr_patterns=None):
+  """
+  wrapper function
+  """
+  if attr_patterns is None:
+    attr_patterns= [
+      b'<span class="sx-price-whole">[0-9]+</span>',
+      b'<sup class="sx-price-fractional">[0-9]+</sup>'
+    ]
+  page_str = get_page_content(url,headers)
+  obj_list=parse_page(page_str,attr_patterns)
+  return obj_list
 
 
-html.open_in_browser(tree)
+#html.open_in_browser(tree)
